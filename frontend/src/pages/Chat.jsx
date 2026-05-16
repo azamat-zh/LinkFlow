@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { approveMatch, matchActors } from "../api/client";
+import { useEffect, useState } from "react";
+import { approveMatch, getActors, matchActors } from "../api/client";
 import MatchCard from "../components/MatchCard";
 
 const TARGET_TYPES = [
@@ -16,8 +16,22 @@ export default function Chat() {
   const [loading, setLoading] = useState(false);
   const [approved, setApproved] = useState(new Set());
 
+  const [companies, setCompanies] = useState([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState("");
+
+  useEffect(() => {
+    getActors("company").then((list) => {
+      setCompanies(list);
+      if (list.length > 0) setSelectedCompanyId(list[0].id);
+    }).catch(() => {});
+  }, []);
+
   async function handleSend() {
     if (!query.trim()) return;
+    if (!selectedCompanyId) {
+      alert("Please onboard at least one company first, then search for matches.");
+      return;
+    }
     setLoading(true);
     setResults([]);
     try {
@@ -31,8 +45,12 @@ export default function Chat() {
   }
 
   async function handleApprove(match) {
+    if (!selectedCompanyId) {
+      alert("Select a company to match with first.");
+      return;
+    }
     try {
-      await approveMatch(match.actor_id, "default-requester", match.score, match.reasoning, "default");
+      await approveMatch(match.actor_id, selectedCompanyId, match.score, match.reasoning, "default");
       setApproved((prev) => new Set([...prev, match.actor_id]));
     } catch (err) {
       alert("Failed to approve match: " + err.message);
@@ -43,35 +61,62 @@ export default function Chat() {
     <div className="page-container" style={{ maxWidth: 860, margin: "0 auto" }}>
       <h2 className="page-title">AI Matchmaker</h2>
 
-      <div style={{ display: "flex", gap: 12, marginBottom: 32, background: "var(--bg-surface)", padding: "8px", borderRadius: "var(--radius-lg)", border: "1px solid var(--border)", boxShadow: "var(--shadow-sm)" }}>
-        <select
-          value={targetType}
-          onChange={(e) => setTargetType(e.target.value)}
-          style={{ padding: "8px 12px", borderRadius: "var(--radius)", border: "1px solid var(--border)", background: "var(--bg)", fontSize: 14, color: "var(--text)", cursor: "pointer" }}
-        >
-          {TARGET_TYPES.map((t) => (
-            <option key={t.value} value={t.value}>{t.label}</option>
-          ))}
-        </select>
+      {/* Step 1 — pick the company */}
+      <div className="card" style={{ marginBottom: 16 }}>
+        <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
+          STEP 1 — Which company are you finding a match for?
+        </p>
+        {companies.length === 0 ? (
+          <p style={{ margin: 0, fontSize: 14, color: "var(--danger)" }}>
+            No companies onboarded yet. Go to the Onboard page and upload a company pitch deck first.
+          </p>
+        ) : (
+          <select
+            value={selectedCompanyId}
+            onChange={(e) => setSelectedCompanyId(e.target.value)}
+            style={{ width: "100%", padding: "8px 12px", borderRadius: "var(--radius)", border: "1px solid var(--border)", background: "var(--bg)", fontSize: 14, color: "var(--text)", cursor: "pointer" }}
+          >
+            {companies.map((c) => (
+              <option key={c.id} value={c.id}>{c.name} — {c.sector} · {c.stage}</option>
+            ))}
+          </select>
+        )}
+      </div>
 
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSend()}
-          placeholder={`Try: "Find ${targetType}s with fintech experience for seed-stage startups"`}
-          style={{ flex: 1, border: "none", background: "transparent", fontSize: 15 }}
-        />
+      {/* Step 2 — search */}
+      <div className="card" style={{ marginBottom: 24 }}>
+        <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
+          STEP 2 — Find a match
+        </p>
+        <div style={{ display: "flex", gap: 10 }}>
+          <select
+            value={targetType}
+            onChange={(e) => setTargetType(e.target.value)}
+            style={{ padding: "8px 12px", borderRadius: "var(--radius)", border: "1px solid var(--border)", background: "var(--bg)", fontSize: 14, color: "var(--text)", cursor: "pointer" }}
+          >
+            {TARGET_TYPES.map((t) => (
+              <option key={t.value} value={t.value}>{t.label}</option>
+            ))}
+          </select>
 
-        <button className="btn btn-primary" onClick={handleSend} disabled={loading} style={{ padding: "10px 24px" }}>
-          {loading ? "Searching…" : "✨ Find Match"}
-        </button>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            placeholder={`e.g. "Find ${targetType}s with fintech experience for seed-stage startups"`}
+            style={{ flex: 1 }}
+          />
+
+          <button className="btn btn-primary" onClick={handleSend} disabled={loading || !selectedCompanyId}>
+            {loading ? "Searching…" : "✨ Find Match"}
+          </button>
+        </div>
       </div>
 
       {results.length === 0 && !loading && (
         <div style={{ textAlign: "center", padding: "4rem 0", color: "var(--text-muted)" }}>
           <div style={{ fontSize: 48, marginBottom: 12 }}>🤝</div>
-          <p style={{ fontSize: 16, margin: 0 }}>Enter a query above to find matching actors.</p>
-          <p style={{ fontSize: 14, margin: "4px 0 0" }}>Our AI will analyze profiles to find the best fits.</p>
+          <p style={{ fontSize: 16, margin: 0 }}>Select a company and enter a query to find matches.</p>
         </div>
       )}
 
