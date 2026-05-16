@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { approveMatch, generateIntro, matchActors, notifyActors } from "../api/client";
+import { approveMatch, generateIntro, getActors, matchActors, notifyActors } from "../api/client";
 
 const TYPE_LABEL = {
   mentor: "Mentor",
@@ -140,12 +140,33 @@ export default function Chat() {
   const [sendResults, setSendResults] = useState(null);
   const [approved, setApproved] = useState(false);
 
-  // When Actor A is selected, auto-search for matches
+  // When Actor A is selected: check if original query mentions any actor by name.
+  // If yes → pre-select that actor as B. If no → AI search based on Actor A's profile.
   useEffect(() => {
     if (!actorA) return;
-    const autoQuery = `Find the best matches for ${actorA.name}, a ${actorA.actor_type.replace("_", " ")} in ${actorA.sector}. Their needs: ${actorA.needs.join(", ")}. Their expertise: ${actorA.expertise.join(", ")}.`;
-    setQuery2(autoQuery);
-    runSearch2(autoQuery);
+
+    async function resolveActorB() {
+      const allActors = await getActors().catch(() => []);
+      const q = query1.toLowerCase();
+
+      const mentioned = allActors.find(
+        (a) => a.id !== actorA.id && a.name.toLowerCase().split(" ").some((word) => word.length > 2 && q.includes(word))
+      );
+
+      if (mentioned) {
+        // A specific actor was named in the query — pre-select them as Actor B
+        setActorB({ id: mentioned.id, name: mentioned.name, actor_type: mentioned.actor_type, sector: mentioned.sector });
+        setQuery2(`Matched from query: "${query1}"`);
+        setResults2([]);
+      } else {
+        // No name found — AI suggests best matches based on Actor A's profile
+        const autoQuery = `Find the best matches for ${actorA.name}, a ${actorA.actor_type.replace("_", " ")} in ${actorA.sector}. Their needs: ${actorA.needs?.join(", ")}. Their expertise: ${actorA.expertise?.join(", ")}.`;
+        setQuery2(autoQuery);
+        runSearch2(autoQuery);
+      }
+    }
+
+    resolveActorB();
   }, [actorA]);
 
   async function runSearch1() {
@@ -280,8 +301,16 @@ export default function Chat() {
       {phase === "pick-b" && (
         <div className="card" style={{ marginBottom: 16 }}>
           <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
-            STEP 2 — AI suggestions based on {actorA?.name}'s profile
+            STEP 2 — Who to match {actorA?.name} with?
           </p>
+
+          {/* Name detected from original query */}
+          {actorB && results2.length === 0 && (
+            <div style={{ padding: "10px 12px", background: "var(--teal-light)", borderRadius: "var(--radius)", marginBottom: 12, fontSize: 13 }}>
+              <strong style={{ color: "var(--teal)" }}>Detected from your query:</strong> {actorB.name} was mentioned — pre-selected below. You can change this.
+            </div>
+          )}
+
           <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
             <input
               value={query2}
@@ -297,7 +326,7 @@ export default function Chat() {
 
           {loading2 && <p style={{ color: "var(--text-muted)", fontSize: 14 }}>Finding best matches for {actorA?.name}…</p>}
 
-          {!loading2 && results2.length === 0 && (
+          {!loading2 && results2.length === 0 && !actorB && (
             <p style={{ color: "var(--text-muted)", fontSize: 14 }}>No suggestions yet.</p>
           )}
 
