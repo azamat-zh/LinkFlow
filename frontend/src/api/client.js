@@ -24,11 +24,32 @@ export async function getActor(id) {
   return request(`/api/actors/${id}`);
 }
 
-export async function matchActors(query, targetType, programmeId) {
+export async function matchActors(query, programmeId = "default") {
   return request("/api/match", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query, target_type: targetType, programme_id: programmeId }),
+    body: JSON.stringify({ query, programme_id: programmeId }),
+  });
+}
+
+export async function generateIntro(actorAId, actorBId) {
+  return request("/api/match/generate-intro", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ actor_a_id: actorAId, actor_b_id: actorBId }),
+  });
+}
+
+export async function notifyActors(actorAId, actorBId, messageToA, messageToB) {
+  return request("/api/match/notify", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      actor_a_id: actorAId,
+      actor_b_id: actorBId,
+      message_to_a: messageToA,
+      message_to_b: messageToB,
+    }),
   });
 }
 

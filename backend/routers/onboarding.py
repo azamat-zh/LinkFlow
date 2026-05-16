@@ -1,6 +1,9 @@
+import uuid
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 
-from models.actor import ActorProfile, ActorType
+from models.actor import ActorCreate, ActorProfile, ActorType
 from services import firebase_client, pdf_parser
 from services.workflow_engine import WorkflowTrigger, execute_workflow
 
@@ -22,6 +25,18 @@ async def upload_pdf(file: UploadFile = File(...)):
     firebase_client.save_actor(actor)
     execute_workflow(WorkflowTrigger.actor_joined, {"actor_id": actor.id, "name": actor.name})
 
+    return actor
+
+
+@router.post("/actors", response_model=ActorProfile)
+async def create_actor(body: ActorCreate):
+    actor = ActorProfile(
+        id=str(uuid.uuid4()),
+        created_at=datetime.now(timezone.utc),
+        **body.model_dump(),
+    )
+    firebase_client.save_actor(actor)
+    execute_workflow(WorkflowTrigger.actor_joined, {"actor_id": actor.id, "name": actor.name})
     return actor
 
 
