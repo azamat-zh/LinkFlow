@@ -168,8 +168,8 @@ export default function Chat() {
         setQuery2(`Matched from query: "${query1}"`);
         setResults2([]);
       } else {
-        // No name found — AI suggests best matches based on Actor A's profile
-        const autoQuery = `Find the best matches for ${actorA.name}, a ${actorA.actor_type.replace("_", " ")} in ${actorA.sector}. Their needs: ${actorA.needs?.join(", ")}. Their expertise: ${actorA.expertise?.join(", ")}.`;
+        // No name found — AI suggests best matches using Actor A's profile AND original query context
+        const autoQuery = `The coordinator's request: "${query1}". Now find the best match for ${actorA.name}, a ${actorA.actor_type.replace("_", " ")} in ${actorA.sector}. Their expertise: ${actorA.expertise?.join(", ")}. Prioritise actors that fit both the coordinator's request and ${actorA.name}'s profile.`;
         setQuery2(autoQuery);
         runSearch2(autoQuery);
       }
