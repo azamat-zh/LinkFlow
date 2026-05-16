@@ -25,6 +25,7 @@ class ActorProfile(BaseModel):
     source_file: str
     created_at: datetime
     programme_history: list[str]
+    email: Optional[str] = None
 
 
 class ActorCreate(BaseModel):
@@ -39,3 +40,4 @@ class ActorCreate(BaseModel):
     bio: str
     source_file: str
     programme_history: list[str]
+    email: Optional[str] = None
