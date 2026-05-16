@@ -11,16 +11,20 @@ from models.actor import ActorProfile, ActorType
 
 OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
 
-_SYSTEM_PROMPT = (
-    "You are a profile extraction assistant for an innovation ecosystem platform. "
-    "Extract structured information from the following document and return ONLY valid JSON "
-    "with these exact fields: name (string), actor_type (one of: company, mentor, partner, "
-    "service_provider), sector (string), stage (string — for companies use: idea/pre-seed/seed/"
-    "series-a/growth; for mentors use their seniority), tags (array of 3-7 keyword strings), "
-    "needs (array of strings describing what this actor needs), expertise (array of strings "
-    "describing what this actor offers), location (string), bio (2-3 sentence summary string). "
-    "Return only the JSON object, no explanation, no markdown backticks."
-)
+_SYSTEM_PROMPT = """You are an expert venture capital analyst and profile extraction assistant for an innovation ecosystem platform.
+Extract structured information from the following document and return ONLY a valid JSON object with these exact fields:
+{
+    "name": "string — person or company name",
+    "actor_type": "one of: company, mentor, partner, service_provider",
+    "sector": "string — primary industry sector",
+    "stage": "string — for companies: idea/pre-seed/seed/series-a/growth; for mentors: their seniority level",
+    "tags": ["array of 3-7 keyword strings"],
+    "needs": ["array of strings describing what this actor needs"],
+    "expertise": ["array of strings describing what this actor offers"],
+    "location": "string — city or country",
+    "bio": "string — 2-3 sentence summary"
+}
+Return only the JSON object, no explanation, no markdown backticks."""
 
 
 def _extract_text(file_bytes: bytes) -> str:
@@ -34,11 +38,16 @@ def _extract_text(file_bytes: bytes) -> str:
 
 
 def _call_ollama(text: str) -> dict | None:
-    prompt = f"{_SYSTEM_PROMPT}\n\nDocument:\n{text[:8000]}"
+    prompt = f"{_SYSTEM_PROMPT}\n\nDocument:\n{text[:8000]}\n\nOutput only the JSON:"
     try:
         response = httpx.post(
             f"{OLLAMA_BASE_URL}/api/generate",
-            json={"model": "llama3", "prompt": prompt, "stream": False},
+            json={
+                "model": "llama3",
+                "prompt": prompt,
+                "stream": False,
+                "format": "json",
+            },
             timeout=120.0,
         )
         response.raise_for_status()
