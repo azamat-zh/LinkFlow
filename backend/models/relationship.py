@@ -35,6 +35,8 @@ class Relationship(BaseModel):
     created_at: datetime
     last_updated: datetime
     programme_id: str
+    mentor_confirmed: bool = False
+    startup_confirmed: bool = False
 
 
 class RelationshipCreate(BaseModel):

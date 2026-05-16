@@ -4,6 +4,17 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 
+def simulate_send(to_name: str, to_email: str | None, subject: str, body: str) -> dict:
+    return {
+        "simulated": True,
+        "sent": True,
+        "to_name": to_name,
+        "to_email": to_email or f"(no email on file for {to_name})",
+        "subject": subject,
+        "preview": body[:120] + "…" if len(body) > 120 else body,
+    }
+
+
 def send_email(to_address: str, subject: str, body: str) -> dict:
     host = os.environ.get("SMTP_HOST", "smtp.gmail.com")
     port = int(os.environ.get("SMTP_PORT", "587"))
@@ -25,37 +36,33 @@ def send_email(to_address: str, subject: str, body: str) -> dict:
             server.starttls()
             server.login(user, password)
             server.sendmail(sender, to_address, msg.as_string())
-        return {"sent": True}
+        return {"sent": True, "simulated": False}
     except Exception as e:
         return {"sent": False, "reason": str(e)}
 
 
 def send_match_notifications(
-    actor_a_email: str | None,
     actor_a_name: str,
     message_to_a: str,
-    actor_b_email: str | None,
     actor_b_name: str,
     message_to_b: str,
+    actor_a_email: str | None = None,
+    actor_b_email: str | None = None,
 ) -> dict:
-    results = {}
+    smtp_user = os.environ.get("SMTP_USER", "")
+    smtp_password = os.environ.get("SMTP_PASSWORD", "")
+    use_real_smtp = bool(smtp_user and smtp_password)
 
-    if actor_a_email:
-        results["actor_a"] = send_email(
-            to_address=actor_a_email,
-            subject=f"LinkFlow: You have a new match!",
-            body=message_to_a,
-        )
+    subject = "LinkFlow: You have a new match!"
+
+    if use_real_smtp and actor_a_email:
+        result_a = send_email(actor_a_email, subject, message_to_a)
     else:
-        results["actor_a"] = {"sent": False, "reason": f"No email on file for {actor_a_name}"}
+        result_a = simulate_send(actor_a_name, actor_a_email, subject, message_to_a)
 
-    if actor_b_email:
-        results["actor_b"] = send_email(
-            to_address=actor_b_email,
-            subject=f"LinkFlow: You have a new match!",
-            body=message_to_b,
-        )
+    if use_real_smtp and actor_b_email:
+        result_b = send_email(actor_b_email, subject, message_to_b)
     else:
-        results["actor_b"] = {"sent": False, "reason": f"No email on file for {actor_b_name}"}
+        result_b = simulate_send(actor_b_name, actor_b_email, subject, message_to_b)
 
-    return results
+    return {"actor_a": result_a, "actor_b": result_b}

@@ -134,11 +134,12 @@ export default function Chat() {
 
   // Phase 3
   const [loadingIntro, setLoadingIntro] = useState(false);
+  const [introFallback, setIntroFallback] = useState(false);
   const [msgToA, setMsgToA] = useState("");
   const [msgToB, setMsgToB] = useState("");
   const [sending, setSending] = useState(false);
   const [sendResults, setSendResults] = useState(null);
-  const [approved, setApproved] = useState(false);
+  const [approvedRel, setApprovedRel] = useState(null);
 
   // When Actor A is selected: check if original query mentions any actor by name.
   // If yes → pre-select that actor as B. If no → AI search based on Actor A's profile.
@@ -222,31 +223,38 @@ export default function Chat() {
   async function handleConfirm() {
     setPhase("confirm");
     setLoadingIntro(true);
+    setIntroFallback(false);
     try {
       const intro = await generateIntro(actorA.id, actorB.id);
       setMsgToA(intro.message_to_a);
       setMsgToB(intro.message_to_b);
+      if (intro.fallback) setIntroFallback(true);
     } catch {
       setMsgToA(`Hi ${actorA.name},\n\nWe'd like to connect you with ${actorB.name}.\n\nBest,\nThe LinkFlow Team`);
       setMsgToB(`Hi ${actorB.name},\n\nWe'd like to connect you with ${actorA.name}.\n\nBest,\nThe LinkFlow Team`);
+      setIntroFallback(true);
     } finally {
       setLoadingIntro(false);
+    }
+  }
+
+  async function handleApprove() {
+    const rel = await approveMatch(actorA.id, actorB.id, 0, "Manually matched by coordinator", "default");
+    setApprovedRel(rel);
+    // If emails were already simulated, log that on the relationship
+    if (sendResults && rel?.id) {
+      await notifyActors(actorA.id, actorB.id, msgToA, msgToB, rel.id);
     }
   }
 
   async function handleSendEmails() {
     setSending(true);
     try {
-      const results = await notifyActors(actorA.id, actorB.id, msgToA, msgToB);
+      const results = await notifyActors(actorA.id, actorB.id, msgToA, msgToB, approvedRel?.id || null);
       setSendResults(results);
     } finally {
       setSending(false);
     }
-  }
-
-  async function handleApprove() {
-    await approveMatch(actorA.id, actorB.id, 0, "Manually matched by coordinator", "default");
-    setApproved(true);
   }
 
   function reset() {
@@ -254,8 +262,8 @@ export default function Chat() {
     setActorA(null); setActorB(null);
     setQuery1(""); setResults1([]); setSearched1(false);
     setQuery2(""); setResults2([]);
-    setMsgToA(""); setMsgToB("");
-    setSendResults(null); setApproved(false);
+    setMsgToA(""); setMsgToB(""); setIntroFallback(false);
+    setSendResults(null); setApprovedRel(null);
   }
 
   return (
@@ -360,7 +368,13 @@ export default function Chat() {
           <SelectedBadge actor={actorB} onClear={() => { setActorB(null); setPhase("pick-b"); }} />
 
           <div className="card" style={{ marginBottom: 16 }}>
-            <p style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600 }}>
+            {introFallback && (
+              <div style={{ marginBottom: 12, padding: "8px 12px", background: "var(--amber-light)", borderRadius: "var(--radius)", fontSize: 13, color: "var(--amber)" }}>
+                ⚠ Gemini unavailable — showing template message. You can edit it below.
+              </div>
+            )}
+
+            <p style={{ margin: "0 0 14px", fontSize: 14, fontWeight: 600 }}>
               Review and edit the intro messages before sending
             </p>
 
@@ -374,25 +388,51 @@ export default function Chat() {
               )
             }
 
+            {/* Simulation result */}
             {sendResults && (
-              <div style={{ marginBottom: 12, fontSize: 13 }}>
-                {sendResults.actor_a?.sent
-                  ? <p style={{ color: "var(--teal)", margin: "0 0 4px" }}>✓ Email sent to {actorA.name}</p>
-                  : <p style={{ color: "var(--text-muted)", margin: "0 0 4px" }}>⚠ {actorA.name}: {sendResults.actor_a?.reason}</p>}
-                {sendResults.actor_b?.sent
-                  ? <p style={{ color: "var(--teal)", margin: 0 }}>✓ Email sent to {actorB.name}</p>
-                  : <p style={{ color: "var(--text-muted)", margin: 0 }}>⚠ {actorB.name}: {sendResults.actor_b?.reason}</p>}
+              <div style={{ marginBottom: 14, padding: "10px 12px", background: "var(--teal-light)", borderRadius: "var(--radius)", fontSize: 13 }}>
+                <strong style={{ display: "block", marginBottom: 6, color: "var(--teal)" }}>
+                  ✓ Email simulation complete
+                </strong>
+                {[
+                  { res: sendResults.actor_a, name: actorA.name },
+                  { res: sendResults.actor_b, name: actorB.name },
+                ].map(({ res, name }) => (
+                  <div key={name} style={{ marginBottom: 4 }}>
+                    <strong>{name}</strong> →{" "}
+                    {res.simulated
+                      ? `simulated to ${res.to_email}`
+                      : res.sent ? "sent ✓" : `failed: ${res.reason}`}
+                  </div>
+                ))}
               </div>
             )}
 
             <div style={{ display: "flex", gap: 10 }}>
-              <button className="btn btn-primary" onClick={handleSendEmails} disabled={sending || loadingIntro} style={{ flex: 1, padding: 12 }}>
-                {sending ? "Sending…" : "Send Emails"}
+              <button
+                className="btn btn-primary"
+                onClick={handleSendEmails}
+                disabled={sending || loadingIntro}
+                style={{ flex: 1, padding: 12 }}
+              >
+                {sending ? "Simulating…" : sendResults ? "Re-send Emails" : "Simulate Send"}
               </button>
-              <button className="btn" onClick={handleApprove} disabled={approved} style={{ flex: 1, padding: 12 }}>
-                {approved ? "✓ Relationship Created" : "Approve & Create Relationship"}
+              <button
+                className="btn"
+                onClick={handleApprove}
+                disabled={!!approvedRel}
+                style={{ flex: 1, padding: 12 }}
+              >
+                {approvedRel ? "✓ Relationship Created" : "Approve & Create Relationship"}
               </button>
             </div>
+
+            {approvedRel && (
+              <p style={{ marginTop: 10, fontSize: 13, color: "var(--teal)" }}>
+                Relationship created (ID: {approvedRel.id.slice(0, 8)}…). View it on the{" "}
+                <a href="/dashboard" style={{ color: "var(--primary)" }}>Dashboard</a>.
+              </p>
+            )}
           </div>
 
           <button className="btn" onClick={reset} style={{ fontSize: 13 }}>← Start over</button>

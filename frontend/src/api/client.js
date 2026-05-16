@@ -40,7 +40,7 @@ export async function generateIntro(actorAId, actorBId) {
   });
 }
 
-export async function notifyActors(actorAId, actorBId, messageToA, messageToB) {
+export async function notifyActors(actorAId, actorBId, messageToA, messageToB, relationshipId) {
   return request("/api/match/notify", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -49,6 +49,7 @@ export async function notifyActors(actorAId, actorBId, messageToA, messageToB) {
       actor_b_id: actorBId,
       message_to_a: messageToA,
       message_to_b: messageToB,
+      relationship_id: relationshipId || null,
     }),
   });
 }
@@ -74,7 +75,11 @@ export async function getRelationships(filters = {}) {
   return request(`/api/relationships${qs ? `?${qs}` : ""}`);
 }
 
-export async function logSession(relId, notes, loggedBy) {
+export async function getRelationship(relId) {
+  return request(`/api/relationships/${relId}`);
+}
+
+export async function logSession(relId, notes, loggedBy = "coordinator") {
   return request(`/api/relationships/${relId}/session`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -87,6 +92,22 @@ export async function updateRelationshipState(relId, state) {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ state }),
+  });
+}
+
+export async function confirmActor(relId, role, confirmedBy = "coordinator") {
+  return request(`/api/relationships/${relId}/confirm`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ role, confirmed_by: confirmedBy }),
+  });
+}
+
+export async function generateNudge(relId) {
+  return request(`/api/relationships/${relId}/nudge`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({}),
   });
 }
 
