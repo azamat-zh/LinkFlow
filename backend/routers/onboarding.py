@@ -26,13 +26,13 @@ async def upload_pdf(file: UploadFile = File(...)):
 
 
 @router.get("/actors", response_model=list[ActorProfile])
-async def list_actors(type: str = Query(default=None)):
-    if type:
+async def list_actors(actor_type: str = Query(default=None, alias="type")):
+    if actor_type:
         try:
-            actor_type = ActorType(type)
+            parsed_type = ActorType(actor_type)
         except ValueError:
-            raise HTTPException(status_code=400, detail=f"Invalid actor type: {type}")
-        return firebase_client.get_actors_by_type(actor_type)
+            raise HTTPException(status_code=400, detail=f"Invalid actor type: {actor_type}")
+        return firebase_client.get_actors_by_type(parsed_type)
     return firebase_client.get_all_actors()
 
 

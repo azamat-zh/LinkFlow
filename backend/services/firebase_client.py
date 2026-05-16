@@ -74,6 +74,12 @@ def get_actors_by_type(actor_type: ActorType) -> list[ActorProfile]:
     return [_doc_to_actor(doc) for doc in docs]
 
 
+def get_all_relationships() -> list[Relationship]:
+    db = get_db()
+    docs = db.collection("relationships").stream()
+    return [_doc_to_relationship(doc) for doc in docs]
+
+
 def get_relationship(id: str) -> Optional[Relationship]:
     db = get_db()
     doc = db.collection("relationships").document(id).get()

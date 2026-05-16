@@ -24,6 +24,7 @@ class ApproveRequest(BaseModel):
     match_score: float
     match_reasoning: str
     programme_id: str
+    relationship_type: RelationshipType = RelationshipType.mentor_company
 
 
 @router.post("/match", response_model=list[gemini_matcher.MatchResult])
@@ -43,7 +44,7 @@ async def approve_match(body: ApproveRequest):
     now = datetime.now(timezone.utc)
     rel = Relationship(
         id=str(uuid.uuid4()),
-        relationship_type=RelationshipType.mentor_company,
+        relationship_type=body.relationship_type,
         actor_a_id=body.actor_a_id,
         actor_b_id=body.actor_b_id,
         state=RelationshipState.pending,

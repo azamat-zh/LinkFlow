@@ -28,9 +28,7 @@ async def list_relationships(
     if actor_id:
         rels = firebase_client.get_relationships_by_actor(actor_id)
     else:
-        db = firebase_client.get_db()
-        docs = db.collection("relationships").stream()
-        rels = [firebase_client._doc_to_relationship(doc) for doc in docs]
+        rels = firebase_client.get_all_relationships()
 
     if state:
         try:
@@ -85,4 +83,5 @@ async def update_state(rel_id: str, body: StateRequest):
 
     firebase_client.update_relationship_state(rel_id, new_state)
     rel.state = new_state
+    rel.last_updated = datetime.now(timezone.utc)
     return rel
