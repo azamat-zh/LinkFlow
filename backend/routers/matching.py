@@ -1,10 +1,9 @@
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel
 
-from models.actor import ActorType
 from models.relationship import Relationship, RelationshipState, RelationshipType
 from services import firebase_client, gemini_matcher
 from services.workflow_engine import WorkflowTrigger, execute_workflow
@@ -14,8 +13,7 @@ router = APIRouter()
 
 class MatchRequest(BaseModel):
     query: str
-    target_type: str
-    programme_id: str
+    programme_id: str = "default"
 
 
 class ApproveRequest(BaseModel):
@@ -23,18 +21,13 @@ class ApproveRequest(BaseModel):
     actor_b_id: str
     match_score: float
     match_reasoning: str
-    programme_id: str
+    programme_id: str = "default"
     relationship_type: RelationshipType = RelationshipType.mentor_company
 
 
 @router.post("/match", response_model=list[gemini_matcher.MatchResult])
 async def match(body: MatchRequest):
-    try:
-        actor_type = ActorType(body.target_type)
-    except ValueError:
-        raise HTTPException(status_code=400, detail=f"Invalid target_type: {body.target_type}")
-
-    candidates = firebase_client.get_actors_by_type(actor_type)
+    candidates = firebase_client.get_all_actors()
     results = gemini_matcher.match_actors(body.query, candidates)
     return results
 

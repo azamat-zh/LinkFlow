@@ -1,20 +1,11 @@
 import json
 import os
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from pydantic import BaseModel
 
 from models.actor import ActorProfile
-
-_SYSTEM_INSTRUCTION = (
-    "You are an ecosystem relationship matching engine for an innovation programme platform. "
-    "Given an administrator's natural language request and a list of actor profiles, return the "
-    "top 5 matches ranked by fit score. For each match return a JSON object with: actor_id (string), "
-    "actor_name (string), score (integer 0-100 representing match quality), reasoning (one sentence "
-    "explaining the match), suggested_intro (a 2-sentence introduction message the admin could send "
-    "to both parties). Consider sector alignment, stage compatibility, and complementary needs versus "
-    "expertise. Be honest about weak matches. Return only a valid JSON array, no markdown."
-)
 
 
 class MatchResult(BaseModel):
@@ -25,40 +16,64 @@ class MatchResult(BaseModel):
     suggested_intro: str
 
 
-def _get_model():
-    api_key = os.environ.get("GEMINI_API_KEY", "")
-    genai.configure(api_key=api_key)
-    return genai.GenerativeModel(
-        model_name="gemini-1.5-flash",
-        system_instruction=_SYSTEM_INSTRUCTION,
-    )
+_SYSTEM_PROMPT = """You are an expert innovation ecosystem matchmaker.
+A programme coordinator will describe a situation in plain language — a startup's problem, a need, a goal.
+Your job is to read ALL available actor profiles (mentors, companies, partners, service providers) and return the most relevant ones that could help.
+
+Rules:
+- Pick the best matches regardless of actor type — if the coordinator needs a mentor AND a service provider, return both
+- Score each match on genuine relevance to the described situation (0-100)
+- Only return actors that are actually useful — do not pad results with weak matches
+- Return up to 5 results maximum, sorted by score descending
+
+You MUST output ONLY a valid JSON array. No markdown, no explanation, nothing outside the JSON.
+Each object must strictly match:
+{
+    "actor_id": "exact id from the profile",
+    "actor_name": "actor's name",
+    "score": integer 0-100,
+    "reasoning": "one sentence — why this actor helps with the described situation",
+    "suggested_intro": "2-sentence message the coordinator could send to introduce this actor to the startup"
+}"""
 
 
 def match_actors(query: str, candidates: list[ActorProfile]) -> list[MatchResult]:
     if not candidates:
         return [MatchResult(
             actor_id="",
-            actor_name="No candidates",
+            actor_name="No actors onboarded",
             score=0,
-            reasoning="No candidate profiles were found in the database for the requested type.",
+            reasoning="No profiles exist in the database yet. Onboard some actors first.",
             suggested_intro="",
         )]
+
+    api_key = os.environ.get("GEMINI_API_KEY", "")
+    client = genai.Client(api_key=api_key)
 
     profiles_json = json.dumps(
         [c.model_dump(mode="json") for c in candidates],
         indent=2,
         default=str,
     )
+
     prompt = (
-        f"Admin query: {query}\n\n"
-        f"Candidate profiles:\n{profiles_json}"
+        f"{_SYSTEM_PROMPT}"
+        f"\n\nCoordinator's request: {query}"
+        f"\n\nAll available actors:\n{profiles_json}"
+        f"\n\nReturn only the JSON array:"
     )
 
     try:
-        model = _get_model()
-        response = model.generate_content(prompt)
-        raw = response.text.strip()
-        data = json.loads(raw)
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+            ),
+        )
+        data = json.loads(response.text.strip())
+        if not isinstance(data, list):
+            data = [data]
         return [MatchResult(**item) for item in data]
     except Exception as exc:
         return [MatchResult(

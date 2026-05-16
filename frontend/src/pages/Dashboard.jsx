@@ -23,6 +23,12 @@ export default function Dashboard() {
     getRelationships().then(setRels).catch(() => {});
   }, []);
 
+  // Create a map of IDs to Names for trustworthy display
+  const actorMap = actors.reduce((acc, actor) => {
+    acc[actor.id] = actor.name;
+    return acc;
+  }, {});
+
   async function handleLogSession(relId, notes, loggedBy) {
     const updated = await logSession(relId, notes, loggedBy);
     setRels((prev) => prev.map((r) => (r.id === relId ? updated : r)));
@@ -51,10 +57,10 @@ export default function Dashboard() {
   const activeRels = rels.filter((r) => r.state === "active").length;
 
   return (
-    <div className="three-col" style={{ padding: "2rem" }}>
+    <div className="three-col page-container">
       <div>
-        <h2 style={{ marginTop: 0 }}>Metrics</h2>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <h2 className="page-title">Metrics</h2>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <MetricCard label="Total Companies" value={companies} />
           <MetricCard label="Total Mentors" value={mentors} />
           <MetricCard label="Total Partners" value={partners} />
@@ -63,50 +69,56 @@ export default function Dashboard() {
       </div>
 
       <div>
-        <h2 style={{ marginTop: 0 }}>All Relationships</h2>
+        <h2 className="page-title">All Relationships</h2>
         {rels.length === 0
           ? <p style={{ color: "var(--text-muted)" }}>No relationships yet.</p>
           : rels.map((rel) => (
-            <RelationshipCard key={rel.id} relationship={rel} onLogSession={handleLogSession} />
+            <RelationshipCard 
+              key={rel.id} 
+              relationship={rel} 
+              actorMap={actorMap}
+              onLogSession={handleLogSession} 
+            />
           ))
         }
       </div>
 
       <div>
-        <h2 style={{ marginTop: 0 }}>Needs Attention</h2>
+        <h2 className="page-title">Needs Attention</h2>
         <button className="btn btn-primary" onClick={handleCheckStale} disabled={checkingStale}>
-          {checkingStale ? "Checking…" : "Check now"}
+          {checkingStale ? "Checking…" : "🔍 Check Stale"}
         </button>
 
         {stale.length === 0 && !checkingStale && (
-          <p style={{ color: "var(--text-muted)", marginTop: 12 }}>
-            Click to check for stale relationships.
+          <p style={{ color: "var(--text-muted)", marginTop: 16, fontSize: 14 }}>
+            Click to check for relationships with no activity in 14 days.
           </p>
         )}
 
         {stale.map((item, i) => (
-          <div key={i} className="card" style={{ marginTop: 12 }}>
+          <div key={i} className="card" style={{ marginTop: 16 }}>
             <p style={{ margin: "0 0 4px", fontWeight: 600, fontSize: 14 }}>
-              {item.relationship.actor_a_id} ↔ {item.relationship.actor_b_id}
+              {actorMap[item.relationship.actor_a_id] || "Unknown"} ↔ {actorMap[item.relationship.actor_b_id] || "Unknown"}
             </p>
-            <p style={{ margin: "0 0 8px", fontSize: 13, color: "var(--text-muted)" }}>
+            <p style={{ margin: "0 0 12px", fontSize: 13, color: "var(--text-muted)" }}>
               Last updated: {new Date(item.relationship.last_updated).toLocaleDateString()}
             </p>
             <div style={{
               background: "var(--amber-light)",
               borderRadius: "var(--radius)",
-              padding: "10px 12px",
+              padding: "12px 14px",
               fontSize: 13,
-              marginBottom: 8,
+              marginBottom: 12,
+              border: "1px solid rgba(217, 119, 6, 0.2)"
             }}>
-              {item.nudge_message}
+              💬 {item.nudge_message}
             </div>
             <button
               className="btn"
               style={{ fontSize: 13 }}
               onClick={() => handleCopy(item.nudge_message, i)}
             >
-              {copiedId === i ? "Copied!" : "Copy message"}
+              {copiedId === i ? "✓ Copied!" : "Copy message"}
             </button>
           </div>
         ))}
