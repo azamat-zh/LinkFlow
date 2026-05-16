@@ -25,6 +25,10 @@ async def get_stale():
 
 @router.get("/workflows/events")
 async def get_events():
+    import os
+    if os.environ.get("USE_MOCK_DB", "false").lower() == "true":
+        return firebase_client.get_mock_events()
+
     db = firebase_client.get_db()
     docs = (
         db.collection("workflow_events")
