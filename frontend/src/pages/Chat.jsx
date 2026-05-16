@@ -149,9 +149,18 @@ export default function Chat() {
       const allActors = await getActors().catch(() => []);
       const q = query1.toLowerCase();
 
-      const mentioned = allActors.find(
-        (a) => a.id !== actorA.id && a.name.toLowerCase().split(" ").some((word) => word.length > 2 && q.includes(word))
-      );
+      // Split query into whole words for exact matching (avoids "tech" matching "fintech")
+      const qWords = new Set(q.split(/\W+/).filter((w) => w.length > 2));
+
+      const mentioned = allActors
+        .filter((a) => a.id !== actorA.id)
+        .map((a) => {
+          const nameWords = a.name.toLowerCase().split(/\W+/).filter((w) => w.length > 2);
+          const matchCount = nameWords.filter((w) => qWords.has(w)).length;
+          return { actor: a, matchCount };
+        })
+        .filter((x) => x.matchCount > 0)
+        .sort((a, b) => b.matchCount - a.matchCount)[0]?.actor;
 
       if (mentioned) {
         // A specific actor was named in the query — pre-select them as Actor B
