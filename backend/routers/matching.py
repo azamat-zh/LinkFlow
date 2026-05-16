@@ -80,7 +80,7 @@ Keep each message under 100 words. Warm, human, no corporate jargon."""
         client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY", ""))
         from google.genai import types
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-1.5-flash",
             contents=prompt,
             config=types.GenerateContentConfig(response_mime_type="application/json"),
         )
