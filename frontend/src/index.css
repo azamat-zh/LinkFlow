@@ -1,0 +1,264 @@
+:root {
+  --primary: #534AB7;
+  --primary-light: #EEEDFE;
+  --teal: #1D9E75;
+  --teal-light: #E1F5EE;
+  --amber: #BA7517;
+  --amber-light: #FAEEDA;
+  --danger: #E24B4A;
+  --danger-light: #FCEBEB;
+  --gray: #888780;
+  --gray-light: #F1EFE8;
+  --border: #e0e0e0;
+  --text: #1a1a1a;
+  --text-muted: #666666;
+  --bg: #ffffff;
+  --bg-surface: #f8f8f6;
+  --radius: 8px;
+  --radius-lg: 12px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  margin: 0;
+  color: var(--text);
+  background: var(--bg);
+}
+
+nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  height: 56px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+nav a {
+  text-decoration: none;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 500;
+  transition: color 0.15s;
+}
+
+nav a:hover {
+  color: var(--primary);
+}
+
+.card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-weight: 500;
+}
+
+.badge--company {
+  background: #ede8ff;
+  color: var(--primary);
+}
+
+.badge--mentor {
+  background: var(--teal-light);
+  color: var(--teal);
+}
+
+.badge--partner {
+  background: #ddeeff;
+  color: #1a6dbb;
+}
+
+.badge--service-provider {
+  background: var(--gray-light);
+  color: var(--gray);
+}
+
+.badge--pending {
+  background: var(--amber-light);
+  color: var(--amber);
+}
+
+.badge--active {
+  background: var(--teal-light);
+  color: var(--teal);
+}
+
+.badge--stale {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.badge--completed {
+  background: var(--gray-light);
+  color: var(--gray);
+}
+
+.badge--closed {
+  background: #f0f0f0;
+  color: #aaa;
+}
+
+.pill {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--primary-light);
+  color: var(--primary);
+  font-weight: 500;
+}
+
+.btn {
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  transition: background 0.15s;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--bg-surface);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #443fa0;
+}
+
+.metric-card {
+  background: var(--bg-surface);
+  border-radius: var(--radius);
+  padding: 1rem;
+  text-align: center;
+}
+
+.metric-card .value {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.metric-card .label {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.three-col {
+  display: grid;
+  grid-template-columns: 220px 1fr 280px;
+  gap: 2rem;
+  align-items: start;
+}
+
+.dropzone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.dropzone:hover,
+.dropzone--active {
+  border-color: var(--primary);
+}
+
+.progress-bar {
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+.progress-fill--animated {
+  width: 70%;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+input,
+textarea {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+input:focus,
+textarea:focus {
+  border-color: var(--primary);
+}
+
+textarea {
+  resize: vertical;
+}
+
+.match-score {
+  font-size: 28px;
+  font-weight: 700;
+  min-width: 48px;
+  text-align: center;
+}
+
+.score-high {
+  color: var(--teal);
+}
+
+.score-mid {
+  color: var(--amber);
+}
+
+.score-low {
+  color: var(--danger);
+}
