@@ -21,16 +21,16 @@ DEFAULT_CREDENTIALS_PATH = os.path.join(BACKEND_DIR, "firebase-credentials.json"
 def get_db():
     global _db
     if _db is None:
-            import firebase_admin
-            from firebase_admin import credentials, firestore
+        import firebase_admin
+        from firebase_admin import credentials, firestore
 
-            cred_path = os.environ.get("FIREBASE_CREDENTIALS_PATH", DEFAULT_CREDENTIALS_PATH)
+        cred_path = os.environ.get("FIREBASE_CREDENTIALS_PATH", DEFAULT_CREDENTIALS_PATH)
 
-            if not os.path.exists(cred_path):
-                raise FileNotFoundError(
-                    f"Firebase credentials file not found at {cred_path}. "
-                    "Place firebase-credentials.json in the backend/ folder or set FIREBASE_CREDENTIALS_PATH."
-                )
+        if not os.path.exists(cred_path):
+            raise FileNotFoundError(
+                f"Firebase credentials file not found at {cred_path}. "
+                "Place firebase-credentials.json in the backend/ folder or set FIREBASE_CREDENTIALS_PATH."
+            )
         if not firebase_admin._apps:
             cred = credentials.Certificate(cred_path)
             firebase_admin.initialize_app(cred)
