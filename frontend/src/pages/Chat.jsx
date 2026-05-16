@@ -49,7 +49,7 @@ export default function Chat() {
     try {
       // Search all other categories in parallel and merge results
       const allResults = await Promise.all(
-        otherTypes.map((t) => matchActors(q, t.value, "default").catch(() => []))
+        otherTypes.map((t) => matchActors(q, t.value, "default", selectedActorId).catch(() => []))
       );
       const merged = allResults
         .flat()

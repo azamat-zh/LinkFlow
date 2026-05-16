@@ -17,20 +17,22 @@ class MatchResult(BaseModel):
 
 
 _SYSTEM_PROMPT = """You are an expert venture ecosystem matchmaker for an innovation programme platform.
-Given an administrator's natural language request and a list of actor profiles, return the top 5 matches ranked by fit score.
+You will be given a FOCUS ACTOR profile and a list of CANDIDATE profiles.
+Your job is to score how well each candidate complements the focus actor — based on their needs vs expertise, sector alignment, and stage compatibility.
+The admin's query is an optional hint but the primary scoring must be based on profile-to-profile fit, not keyword matching.
 You MUST output ONLY a valid JSON array. Do not include any markdown formatting or text outside the JSON.
 Each object in the array must strictly match this structure:
 {
-    "actor_id": "the exact id of the actor",
-    "actor_name": "the actor's name",
-    "score": integer between 0 and 100 representing match quality,
-    "reasoning": "one sentence explaining the match",
-    "suggested_intro": "a 2-sentence introduction message the admin could send to both parties"
+    "actor_id": "the exact id of the candidate actor",
+    "actor_name": "the candidate's name",
+    "score": integer between 0 and 100 representing compatibility with the focus actor,
+    "reasoning": "one sentence explaining why this candidate fits the focus actor specifically",
+    "suggested_intro": "a 2-sentence introduction message referencing both actors by name"
 }
-Consider sector alignment, stage compatibility, and complementary needs versus expertise. Be honest about weak matches."""
+Be honest — a weak profile match should score low even if it matches the query keywords."""
 
 
-def match_actors(query: str, candidates: list[ActorProfile]) -> list[MatchResult]:
+def match_actors(query: str, candidates: list[ActorProfile], focus_actor: ActorProfile | None = None) -> list[MatchResult]:
     if not candidates:
         return [MatchResult(
             actor_id="",
@@ -43,12 +45,23 @@ def match_actors(query: str, candidates: list[ActorProfile]) -> list[MatchResult
     api_key = os.environ.get("GEMINI_API_KEY", "")
     client = genai.Client(api_key=api_key)
 
+    focus_section = ""
+    if focus_actor:
+        focus_json = json.dumps(focus_actor.model_dump(mode="json"), indent=2, default=str)
+        focus_section = f"\n\nFOCUS ACTOR (find matches FOR this person/organisation):\n{focus_json}"
+
     profiles_json = json.dumps(
         [c.model_dump(mode="json") for c in candidates],
         indent=2,
         default=str,
     )
-    prompt = f"{_SYSTEM_PROMPT}\n\nAdmin query: {query}\n\nCandidate profiles:\n{profiles_json}\n\nOutput only the JSON array:"
+    prompt = (
+        f"{_SYSTEM_PROMPT}"
+        f"{focus_section}"
+        f"\n\nAdmin hint/query: {query}"
+        f"\n\nCANDIDATE profiles to score:\n{profiles_json}"
+        f"\n\nOutput only the JSON array:"
+    )
 
     try:
         response = client.models.generate_content(

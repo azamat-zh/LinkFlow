@@ -16,6 +16,7 @@ class MatchRequest(BaseModel):
     query: str
     target_type: str
     programme_id: str
+    focus_actor_id: str | None = None
 
 
 class ApproveRequest(BaseModel):
@@ -34,8 +35,15 @@ async def match(body: MatchRequest):
     except ValueError:
         raise HTTPException(status_code=400, detail=f"Invalid target_type: {body.target_type}")
 
+    focus_actor = None
+    if body.focus_actor_id:
+        focus_actor = firebase_client.get_actor(body.focus_actor_id)
+
     candidates = firebase_client.get_actors_by_type(actor_type)
-    results = gemini_matcher.match_actors(body.query, candidates)
+    # exclude the focus actor from candidates if same type
+    candidates = [c for c in candidates if c.id != body.focus_actor_id]
+
+    results = gemini_matcher.match_actors(body.query, candidates, focus_actor)
     return results
 
 

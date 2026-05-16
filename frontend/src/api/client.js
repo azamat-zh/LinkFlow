@@ -24,11 +24,11 @@ export async function getActor(id) {
   return request(`/api/actors/${id}`);
 }
 
-export async function matchActors(query, targetType, programmeId) {
+export async function matchActors(query, targetType, programmeId, focusActorId) {
   return request("/api/match", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query, target_type: targetType, programme_id: programmeId }),
+    body: JSON.stringify({ query, target_type: targetType, programme_id: programmeId, focus_actor_id: focusActorId || null }),
   });
 }
 
