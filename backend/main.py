@@ -12,7 +12,9 @@ from services import firebase_client
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    firebase_client.get_db()
+    import os
+    if os.environ.get("USE_MOCK_DB", "false").lower() != "true":
+        firebase_client.get_db()
     yield
 
 
