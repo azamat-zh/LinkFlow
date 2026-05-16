@@ -171,10 +171,10 @@ export default function RelationshipCard({ relationship: initialRel, actorMap = 
 
       {/* Nudge result */}
       {nudgeMsg && (
-        <div style={{ marginTop: 10, padding: "10px 12px", background: "var(--amber-light)", borderRadius: "var(--radius)", fontSize: 13 }}>
-          <strong style={{ display: "block", marginBottom: 4, fontSize: 11, color: "var(--amber)" }}>GENERATED NUDGE</strong>
-          {nudgeMsg}
-          <button className="btn" style={{ marginTop: 6, fontSize: 12 }} onClick={() => navigator.clipboard.writeText(nudgeMsg).then(() => setCopiedNudge(true))}>
+        <div style={{ marginTop: 10, padding: "10px 12px", background: "var(--amber-light)", borderRadius: "var(--radius)", fontSize: 13, border: "1px solid rgba(186,117,23,0.2)" }}>
+          <strong style={{ display: "block", marginBottom: 6, fontSize: 11, color: "var(--amber)", letterSpacing: "0.05em" }}>💬 GENERATED NUDGE</strong>
+          <p style={{ margin: "0 0 8px", lineHeight: 1.5 }}>{nudgeMsg}</p>
+          <button className="btn" style={{ fontSize: 12 }} onClick={() => navigator.clipboard.writeText(nudgeMsg).then(() => { setCopiedNudge(true); setTimeout(() => setCopiedNudge(false), 2000); })}>
             {copiedNudge ? "✓ Copied" : "Copy"}
           </button>
         </div>

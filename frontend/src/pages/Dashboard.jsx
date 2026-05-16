@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { getActors, getRelationships, getStaleRelationships } from "../api/client";
 import RelationshipCard from "../components/RelationshipCard";
 
-function MetricCard({ label, value }) {
+function MetricCard({ label, value, highlight }) {
   return (
-    <div className="metric-card">
-      <div className="value">{value}</div>
+    <div className="metric-card" style={highlight ? { borderLeft: "3px solid var(--danger)" } : {}}>
+      <div className="value" style={{ fontSize: 22, color: highlight ? "var(--danger)" : undefined }}>{value}</div>
       <div className="label">{label}</div>
     </div>
   );
@@ -56,13 +56,13 @@ export default function Dashboard() {
       {/* Left: metrics */}
       <div>
         <h2 className="page-title">Metrics</h2>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <MetricCard label="Companies"          value={companies} />
-          <MetricCard label="Mentors"            value={mentors} />
-          <MetricCard label="Partners"           value={partners} />
-          <MetricCard label="Active"             value={activeRels} />
-          <MetricCard label="Pending"            value={pendingRels} />
-          <MetricCard label="Stale (>14 days)"   value={staleRels.length} />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <MetricCard label="Companies"   value={companies} />
+          <MetricCard label="Mentors"     value={mentors} />
+          <MetricCard label="Partners"    value={partners} />
+          <MetricCard label="Active"      value={activeRels} />
+          <MetricCard label="Pending"     value={pendingRels} />
+          <MetricCard label="Stale"       value={staleRels.length} highlight={staleRels.length > 0} />
         </div>
       </div>
 

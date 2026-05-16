@@ -28,14 +28,18 @@ def evaluate_match_workflow(match_score: int) -> str:
         return "reject"
 
 
-def _generate_nudge() -> str:
+def _generate_nudge(mentor_name: str = "the mentor", startup_name: str = "the startup") -> str:
+    fallback = (
+        f"Hi {mentor_name}, just checking in — it's been a while since your last session with {startup_name}. "
+        f"Hope things are going well, and let us know if there's anything we can do to help!"
+    )
     try:
         api_key = os.environ.get("GEMINI_API_KEY", "")
         client = genai.Client(api_key=api_key)
         prompt = (
-            "Write a friendly 2-sentence check-in message from a programme coordinator to a mentor "
-            "who has not logged a session with their assigned startup in the past 14 days. "
-            "Be warm and non-accusatory. Return only the message text."
+            f"Write a friendly 2-sentence check-in message from a programme coordinator to {mentor_name}, "
+            f"a mentor who has not logged a session with {startup_name} in the past 14 days. "
+            f"Use their actual names. Be warm and non-accusatory. Return only the message text."
         )
         response = client.models.generate_content(
             model="gemini-2.5-flash",
@@ -43,7 +47,7 @@ def _generate_nudge() -> str:
         )
         return response.text.strip()
     except Exception:
-        return "Hi! Just checking in — it's been a while since your last session. Hope everything is going well!"
+        return fallback
 
 
 def execute_workflow(trigger: WorkflowTrigger, context: dict) -> dict:
@@ -58,7 +62,10 @@ def execute_workflow(trigger: WorkflowTrigger, context: dict) -> dict:
         return {"status": "logged", "trigger": trigger.value, "message": "Match approved event recorded.", "recommended_action": action}
 
     if trigger == WorkflowTrigger.relationship_stale:
-        nudge = _generate_nudge()
+        nudge = _generate_nudge(
+            mentor_name=context.get("mentor_name", "the mentor"),
+            startup_name=context.get("startup_name", "the startup"),
+        )
         return {"status": "logged", "trigger": trigger.value, "nudge_message": nudge}
 
     if trigger == WorkflowTrigger.session_logged:
