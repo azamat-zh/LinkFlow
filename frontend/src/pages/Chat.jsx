@@ -32,26 +32,28 @@ export default function Chat() {
   }
 
   return (
-    <div style={{ padding: "2rem", maxWidth: 800, margin: "0 auto" }}>
-      <h2 style={{ marginTop: 0 }}>AI Match</h2>
+    <div className="page-container" style={{ maxWidth: 860, margin: "0 auto" }}>
+      <h2 className="page-title">AI Matchmaker</h2>
 
-      <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
+      <div style={{ display: "flex", gap: 12, marginBottom: 32, background: "var(--bg-surface)", padding: "8px", borderRadius: "var(--radius-lg)", border: "1px solid var(--border)", boxShadow: "var(--shadow-sm)" }}>
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
           placeholder='Try: "Find mentors with fintech experience for seed-stage startups"'
-          style={{ flex: 1 }}
+          style={{ flex: 1, border: "none", background: "transparent", fontSize: 15 }}
         />
-        <button className="btn btn-primary" onClick={handleSend} disabled={loading}>
-          {loading ? "Searching…" : "Send"}
+        <button className="btn btn-primary" onClick={handleSend} disabled={loading} style={{padding: "10px 24px"}}>
+          {loading ? "Searching…" : "✨ Find Match"}
         </button>
       </div>
 
       {results.length === 0 && !loading && (
-        <p style={{ color: "var(--text-muted)" }}>
-          Enter a query above to find matching actors.
-        </p>
+        <div style={{ textAlign: "center", padding: "4rem 0", color: "var(--text-muted)" }}>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>🤝</div>
+          <p style={{ fontSize: 16, margin: 0 }}>Enter a query above to find matching actors.</p>
+          <p style={{ fontSize: 14, margin: "4px 0 0" }}>Our AI will analyze profiles to find the best fits.</p>
+        </div>
       )}
 
       {results.map((match) => (
