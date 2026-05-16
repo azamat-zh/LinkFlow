@@ -15,13 +15,22 @@ _USE_MOCK = os.environ.get("USE_MOCK_DB", "false").lower() == "true"
 # ── Real Firestore client ───────────────────────────────────────────────────────
 _db = None
 
+BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) 
+DEFAULT_CREDENTIALS_PATH = os.path.join(BACKEND_DIR, "firebase-credentials.json")
 
 def get_db():
     global _db
     if _db is None:
-        import firebase_admin
-        from firebase_admin import credentials, firestore
-        cred_path = os.environ.get("FIREBASE_CREDENTIALS_PATH", "./firebase-credentials.json")
+            import firebase_admin
+            from firebase_admin import credentials, firestore
+
+            cred_path = os.environ.get("FIREBASE_CREDENTIALS_PATH", DEFAULT_CREDENTIALS_PATH)
+
+            if not os.path.exists(cred_path):
+                raise FileNotFoundError(
+                    f"Firebase credentials file not found at {cred_path}. "
+                    "Place firebase-credentials.json in the backend/ folder or set FIREBASE_CREDENTIALS_PATH."
+                )
         if not firebase_admin._apps:
             cred = credentials.Certificate(cred_path)
             firebase_admin.initialize_app(cred)
